@@ -6,7 +6,10 @@ import pymap3d
 image_front = image_back = image_left = image_right = None
 point_cloud = []
 
-front_projection = back_projection = left_projection = right_projection = np.zeros((2048,2048), dtype = float)
+front_projection= np.zeros((2048,2048), dtype = float)
+back_projection = np.zeros((2048,2048), dtype = float)
+left_projection = np.zeros((2048,2048), dtype = float)
+right_projection = np.zeros((2048,2048), dtype = float)
 
 # Lat, Lon, Alt, Qs, Qx, Qy, Qz
 camera_config = []
@@ -114,28 +117,28 @@ def map_points(point_cloud):
 
 ##        camera_z=(abs(camera_z)-abs(car_z))
 
-        z_is_positive = ((camera_z) > 0)
-        higher_alt_diff_lat= (camera_z > abs(camera_x))
+        x_is_positive = ((camera_x) > 0)
+        higher_alt_diff_lat= (camera_x > car_x))
 
-        front=z_is_positive and higher_alt_diff_lat 
+        front=x_is_positive and higher_alt_diff_lat 
 ##        print(y_is_positive,higher_alt_diff_lat,higher_alt_diff_lon)
         
-        x_is_positive=((camera_x)>0)
-        higher_lat_diff_lon= (camera_x > abs(camera_z))
+        z_is_positive=((camera_z)>0)
+        higher_lat_diff_lon= (camera_z > camer)
         
-        right= x_is_positive and higher_lat_diff_lon 
+        right= y_is_positive and higher_lat_diff_lon 
 
         
-        z_is_negative=((camera_z)<0)
-       
-       
-        neg_higher_alt_diff_lat= (abs(camera_z) > abs(camera_x))
-        back= z_is_negative and neg_higher_alt_diff_lat 
-
         x_is_negative=((camera_x)<0)
-        neg_higher_lat_diff_lon= (abs(camera_x) > abs(camera_z))
+       
+       
+        neg_higher_alt_diff_lat= (abs(camera_x) > abs(camera_z))
+        back= x_is_negative and neg_higher_alt_diff_lat 
+
+        z_is_negative=((camera_z)<0)
+        neg_higher_lat_diff_lon= (abs(camera_z) > abs(camera_x))
         
-        left=x_is_negative and neg_higher_lat_diff_lon 
+        left=z_is_negative and neg_higher_lat_diff_lon 
 ##        y_is_positive= ((camera_z) > 0)
 ##        x_is_positive = ((camera_x) > 0)
 ##
@@ -164,7 +167,7 @@ def map_points(point_cloud):
 
 
         if front:
-            xi,yi=write_to_image_file(camera_y, camera_x, camera_z)
+            xi,yi=write_to_image_file(camera_y, camera_x, camera_x)
             front_projection[xi][yi]=255
 
         if right:
