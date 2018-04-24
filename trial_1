@@ -1,4 +1,5 @@
 import numpy as np
+from matplotlib import pyplot as plt
 import math
 import cv2
 import pymap3d
@@ -145,7 +146,15 @@ def map_points(point_cloud):
     return front_projection,right_projection,left_projection,back_projection
     
 def find_and_match():
+    image_front = cv2.imread("data/image/front.jpg", cv2.IMREAD_COLOR)
+    image_back = cv2.imread("data/image/back.jpg", cv2.IMREAD_COLOR)
+    image_left = cv2.imread("data/image/left.jpg", cv2.IMREAD_COLOR)
+    image_right = cv2.imread("data/image/right.jpg", cv2.IMREAD_COLOR)
 
+    front_projection = cv2.imread("front_projection.png")
+    back_projection = cv2.imread("back_projection.png")
+    left_projection = cv2.imread("left_projection.png")
+    right_projection = cv2.imread("right_projection.png")
     # Initiate ORB detector
     orb = cv2.ORB_create()
 
@@ -153,15 +162,15 @@ def find_and_match():
     left_image_keypoints, left_image_descriptors = orb.detectAndCompute(image_left, None)
     right_image_keypoints, right_image_descriptors = orb.detectAndCompute(image_right, None)
     back_image_keypoints, back_image_descriptors = orb.detectAndCompute(image_back, None)
-
+    
     front_projection_keypoints, front_projection_descriptors = orb.detectAndCompute(front_projection, None)
+    
     left_projection_keypoints, left_projection_descriptors = orb.detectAndCompute(left_projection, None)
     right_projection_keypoints, right_projection_descriptors = orb.detectAndCompute(right_projection, None)
     back_projection_keypoints, back_projection_descriptors = orb.detectAndCompute(back_projection, None)
 
     # Initiate Brute Force matcher
     bf_matcher = cv2.BFMatcher(cv2.NORM_HAMMING, crossCheck=True)
-
     front_matches = bf_matcher.match(front_image_descriptors, front_projection_descriptors)
     left_matches = bf_matcher.match(left_image_descriptors, left_projection_descriptors)
     right_matches = bf_matcher.match(right_image_descriptors, right_projection_descriptors)
@@ -178,13 +187,54 @@ def find_and_match():
         front_projection_descriptors, left_projection_descriptors, right_projection_descriptors, back_projection_descriptors]
     matches = [front_matches, left_matches, right_matches, back_matches]
 
+
+#Added Extra Part For checking
+##    sample=cv2.drawMatches(image_front,front_image_keypoints,front_projection,front_projection_keypoints,matches[:20],flags=2,**self.draw)
+##    plt.imshow(img3, 'gray'),plt.show()
     return keypoints, descriptors, matches
 
+
+
+def calculate_error_angle(image, img_keys, prj_keys, matches):
+    """
+    Calculates the angle of error between a perspective image
+    and the image created from a projected point cloud
+    """
+    angles = []
+    for match in matches:
+        endpoint_1 = tuple(np.round(img_keys[match.trainIdx].pt).astype(int))
+        endpoint_2 = tuple(np.round(prj_keys[match.queryIdx].pt).astype(int) + np.array([image.shape[1], 0]))
+        angles.append(math.atan((float)(endpoint_2[1] - endpoint_1[1]) / (endpoint_1[0] - endpoint_2[0])) * (180 / math.pi))
+    
+    return sum(angles)/len(angles)
+
+def get_error_angles(keypoints, matches):
+    """ Calls 'calculate_error_angle' for each perspective/projection pair """
+    error_angles = []
+    images = load_images()
+    front_angle = calculate_error_angle(images[0], keypoints[0], keypoints[4], matches[0])
+    error_angles.append(front_angle)
+    left_angle = calculate_error_angle(images[1], keypoints[1], keypoints[5], matches[1])
+    error_angles.append(left_angle)
+    right_angle = calculate_error_angle(images[2], keypoints[2], keypoints[6], matches[2])
+    error_angles.append(right_angle)
+    back_angle = calculate_error_angle(images[3], keypoints[3], keypoints[7], matches[3])
+    error_angles.append(back_angle)
+
+    return error_angles
+
+def output_errors(error_angles):
+    """ Prints Angle Errors between perspective images and projection images """
+    print("Front projection to perspective angle error: ", error_angles[0])
+    print("Left projection to perspective angle error: ", error_angles[1])
+    print("Right projection to perspective angle error: ", error_angles[2])
+    print("Back projection to perspective angle error: ", error_angles[3])
+    return
 def main():
     read_image_files()
     map_points()
     keypoints, descriptors, matches = find_and_match
-
+    
     return
     
 def main():
@@ -197,6 +247,9 @@ def main():
     cv2.imwrite('back_projection.png', back_projection)
     cv2.imwrite('left_projection.png', left_projection)
     cv2.imwrite('right_projection.png', right_projection)
+    keypoints, descriptors, matches = find_and_match()
+    
+    print(keypoints)
     # Matrix transformation
     # Create images from point cloud
     # Detect and match keypoints
