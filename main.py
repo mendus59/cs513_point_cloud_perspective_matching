@@ -71,7 +71,7 @@ def write_to_image_file(write_file, a, b, c):
     xi = (int(((a / c) * 1024) + 1024)) % 2048
     yi = (int(((b / c) * 1024) + 1024)) % 2048
     write_file[xi][yi] = 255
-
+    return write_file
 def map_points(point_cloud, config):
     """ Map point cloud to perspective images """
     car_x, car_y, car_z = convert_point(config, config)
@@ -79,31 +79,32 @@ def map_points(point_cloud, config):
 
     for point in point_cloud:
         camera_x, camera_y, camera_z = convert_point(point, config)
-        camera_x = (abs(camera_x)-abs(car_x))
-        camera_y = (abs(camera_y)-abs(car_y))
-        camera_z = (abs(camera_z)-abs(car_z))
 
-        z_is_positive = ((camera_z) > 0)
+        # Conditional Calculations
         x_is_positive = ((camera_x) > 0)
-        z_more_than_x_from_camera = (abs(camera_z) > abs(camera_x))
-        x_more_than_z_from_camera = (camera_x > abs(camera_z))
-        x_from_camera_more_than_z_from_camera = (abs(camera_x) > abs(camera_z))
-        z_more_than_y_from_camera = (camera_z > abs(camera_y))
-        x_more_than_y_from_camera = (camera_x > abs(camera_y))
+        y_is_positive = ((camera_y) > 0)
+        z_is_positive = ((camera_z) > 0)
+        z_from_camera_more_than_x_from_camera = (abs(camera_z) > abs(camera_x))
         z_from_camera_more_than_y_from_camera = (abs(camera_z) > abs(camera_y))
-        x_from_camera_more_than_y_from_camera = (abs(camera_x) > abs(camera_y))
+        z_more_than_x_from_camera = (camera_z > abs(camera_x))
+        z_more_than_y_from_camera = (camera_z > abs(camera_y))
+        x_from_camera_more_than_z_from_camera = (abs(camera_y) > abs(camera_z))
+        x_from_camera_more_than_y_from_camera = (abs(camera_y) > abs(camera_x))
+        x_more_than_y_from_camera = (camera_y > abs(camera_x))
+        x_more_than_z_from_camera = (camera_y > abs(camera_z))
         neg_x = -camera_x
         neg_z = -camera_z
+        neg_y = -camera_y
 
+        # Determine which image(s) each point should be seen
         if z_is_positive and z_more_than_x_from_camera and z_more_than_y_from_camera:
-            write_to_image_file(front_projection, camera_y, camera_x, camera_z)
-        elif (not z_is_positive) and (not x_from_camera_more_than_z_from_camera) and z_from_camera_more_than_y_from_camera:
-            write_to_image_file(back_projection, camera_y, camera_x, neg_z)
-
-        if x_is_positive and x_more_than_z_from_camera and x_more_than_y_from_camera:
-            write_to_image_file(right_projection, camera_y, camera_z, camera_x)
-        elif not x_is_positive and x_from_camera_more_than_z_from_camera and x_from_camera_more_than_y_from_camera:
-            write_to_image_file(left_projection, camera_y, camera_z, neg_x)
+            right_projection = write_to_image_file(right_projection, camera_x, camera_y, camera_z)
+        if (not z_is_positive) and (z_from_camera_more_than_x_from_camera) and z_from_camera_more_than_y_from_camera:
+            left_projection = write_to_image_file(left_projection, camera_x, camera_y, neg_z)
+        if (y_is_positive) and x_more_than_z_from_camera and x_more_than_y_from_camera:
+            front_projection = write_to_image_file(front_projection, camera_x, camera_z, camera_y)
+        if (not y_is_positive) and x_from_camera_more_than_z_from_camera and x_from_camera_more_than_y_from_camera:
+            back_projection = write_to_image_file(back_projection, camera_x, camera_z, neg_y)
 
     cv2.imwrite('output/front_projection.png', front_projection)
     cv2.imwrite('output/back_projection.png', back_projection)
