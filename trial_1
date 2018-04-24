@@ -76,20 +76,10 @@ def convert_point(point):
     
     return camera_x, camera_y, camera_z
 
-
-def write_to_image_file(a, b, c):
-##    print(a,b,c)
-    xi = int(((c / a) * 1023) + 1024.5)
-    xi=int(xi%2048)
-##    print(xi)
-    yi = int(((c / b) * 1023) + 1024.5)
-    yi=int(yi%2048)
-##    print(yi)
-##    xi = int( ((a / c) * 1024) + 1024)
-##    yi = int( ((b / c) * 1024) + 1024)
-    
-    
-    return xi,yi
+def write_to_image_file(write_file, a, b, c):
+    xi = int( ((a / c) * 1024) + 1024)
+    yi = int( ((b / c) * 1024) + 1024)
+    write_file[xi][yi] = 255
 
 def map_points(point_cloud):
     car_x,car_y,car_z=convert_point(camera_config)
@@ -102,92 +92,50 @@ def map_points(point_cloud):
 ##        car_z=camera_config[2]
 ##        print(car_z)
 ##        car_x,car_y,car_z=convert_point(camera_config,camera_config)
-    
-        camera_x, camera_y, camera_z = convert_point(point)
-##          camera_x, camera_y, camera_z=point[0],point[1],point[2]
-          
 
+        camera_x, camera_y, camera_z = convert_point(point)
 ##        print(car_x,car_y,car_z)
 
 ##        print(camera_x,camera_y,camera_z)
-##        camera_x=(camera_x)
+##        camera_x=(abs(camera_x)-abs(car_x))
 ##        print(camera_x)
 ##        camera_y=(abs(camera_y)-abs(car_y))
 ##        print(camera_y)
 
-##        camera_z=(abs(camera_z)-abs(car_z))
-
+##        camera_z=(abs(camera_z)-abs(car_z)
+        z_is_positive = ((camera_z) > 0)
+        y_is_positive= ((camera_z) > 0)
         x_is_positive = ((camera_x) > 0)
-        higher_alt_diff_lat= (camera_x > car_x))
 
-        front=x_is_positive and higher_alt_diff_lat 
-##        print(y_is_positive,higher_alt_diff_lat,higher_alt_diff_lon)
+#left
+        z_more_than_x_from_camera = (abs(camera_z) > abs(camera_x))
+        z_from_camera_more_than_y_from_camera = (abs(camera_z) > abs(camera_y))
+#right        
+        x_more_than_z_from_camera = (camera_x > abs(camera_z))
+        z_more_than_y_from_camera = (camera_z > abs(camera_y))
+
+#front  
+        x_from_camera_more_than_z_from_camera = (abs(camera_x) > abs(camera_z))
+        x_more_than_y_from_camera = (camera_x > abs(camera_y))
+        x_from_camera_more_than_y_from_camera = (abs(camera_x) > abs(camera_y))
+        neg_x=-camera_x
+        neg_z=-camera_z
+        #actual left
+        if z_is_positive and z_more_than_x_from_camera and z_more_than_y_from_camera:
+            write_to_image_file(left_projection, camera_y, camera_x, camera_z)
+        #actual right
+        if (not z_is_positive) and (not x_from_camera_more_than_z_from_camera) and z_from_camera_more_than_y_from_camera:
+            write_to_image_file(right_projection, camera_y, camera_x, neg_z)
         
-        z_is_positive=((camera_z)>0)
-        higher_lat_diff_lon= (camera_z > camer)
-        
-        right= y_is_positive and higher_lat_diff_lon 
+        if x_is_positive and x_more_than_z_from_camera and x_more_than_y_from_camera:
+            write_to_image_file(front_projection, camera_y, camera_z, camera_x)
+        if not x_is_positive and x_from_camera_more_than_z_from_camera and x_from_camera_more_than_y_from_camera:
+            write_to_image_file(back_projection, camera_y, camera_z, neg_x)
 
-        
-        x_is_negative=((camera_x)<0)
-       
-       
-        neg_higher_alt_diff_lat= (abs(camera_x) > abs(camera_z))
-        back= x_is_negative and neg_higher_alt_diff_lat 
+ 
 
-        z_is_negative=((camera_z)<0)
-        neg_higher_lat_diff_lon= (abs(camera_z) > abs(camera_x))
-        
-        left=z_is_negative and neg_higher_lat_diff_lon 
-##        y_is_positive= ((camera_z) > 0)
-##        x_is_positive = ((camera_x) > 0)
-##
-##
-##
-##        z_more_than_x_from_camera = (abs(camera_z) > abs(camera_x))
-##        
-##        x_more_than_z_from_camera = (camera_x > abs(camera_z))
-##        x_from_camera_more_than_z_from_camera = (abs(camera_x) > abs(camera_z))
-##        z_more_than_y_from_camera = (camera_z > abs(camera_y))
-##        x_more_than_y_from_camera = (camera_x > abs(camera_y))
-##        z_from_camera_more_than_y_from_camera = (abs(camera_z) > abs(camera_y))
-##        x_from_camera_more_than_y_from_camera = (abs(camera_x) > abs(camera_y))
-##        neg_x=-camera_x
-##        neg_z=-camera_z
-##        
-##        if z_is_positive and z_more_than_x_from_camera and z_more_than_y_from_camera:
-##            write_to_image_file(front_projection, camera_y, camera_x, camera_z)
-##        elif (not z_is_positive) and (not x_from_camera_more_than_z_from_camera) and z_from_camera_more_than_y_from_camera:
-##            write_to_image_file(back_projection, camera_y, camera_x, neg_z)
-##
-##        if x_is_positive and x_more_than_z_from_camera and x_more_than_y_from_camera:
-##            write_to_image_file(right_projection, camera_y, camera_z, camera_x)
-##        elif not x_is_positive and x_from_camera_more_than_z_from_camera and x_from_camera_more_than_y_from_camera:
-##            write_to_image_file(left_projection, camera_y, camera_z, neg_x)
-
-
-        if front:
-            xi,yi=write_to_image_file(camera_y, camera_x, camera_x)
-            front_projection[xi][yi]=255
-
-        if right:
-##            print(camera_x,camera_y)
-            xi,yi=write_to_image_file(camera_y, camera_x, camera_x)
-            right_projection[xi][yi]=255
-        if left:
-            xi,yi=write_to_image_file(camera_y, camera_z, -camera_x)
-            left_projection[xi][yi]=255
-        if back:
-            xi,yi=write_to_image_file(camera_y, camera_x, -camera_z)
-            back_projection[xi][yi]=255
-    
-##        print(front,right,left,back)
-   
-    
-    
     return front_projection,right_projection,left_projection,back_projection
-
-   
+    
 def find_and_match():
 
     # Initiate ORB detector
