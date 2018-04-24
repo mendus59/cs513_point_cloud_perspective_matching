@@ -72,10 +72,13 @@ def write_to_image_file(write_file, a, b, c):
     yi = (int(((b / c) * 1024) + 1024)) % 2048
     write_file[xi][yi] = 255
     return write_file
+
 def map_points(point_cloud, config):
     """ Map point cloud to perspective images """
-    car_x, car_y, car_z = convert_point(config, config)
-    front_projection = back_projection = left_projection = right_projection = np.zeros((2048, 2048), dtype = float)
+    front_projection = np.zeros((2048, 2048), dtype=float)
+    back_projection = np.zeros((2048, 2048), dtype=float)
+    left_projection = np.zeros((2048, 2048), dtype=float)
+    right_projection = np.zeros((2048, 2048), dtype=float)
 
     for point in point_cloud:
         camera_x, camera_y, camera_z = convert_point(point, config)
@@ -111,7 +114,7 @@ def map_points(point_cloud, config):
     cv2.imwrite('output/left_projection.png', left_projection)
     cv2.imwrite('output/right_projection.png', right_projection)
 
-    return
+    return front_projection, back_projection, left_projection, right_projection
 
 def load_images():
     """
@@ -174,11 +177,10 @@ def find_and_match():
     right_matches = sorted(right_matches, key=lambda val: val.distance)
     back_matches = sorted(back_matches, key=lambda val: val.distance)
 
-    keypoints = [front_img_keys, left_img_keys, right_img_keys,
-                 back_img_keys, front_prj_keys, left_prj_keys,
-                 right_prj_keys, back_prj_keys]
+    keypoints = [front_img_keys, left_img_keys, right_img_keys, back_img_keys,
+                 front_prj_keys, left_prj_keys, right_prj_keys, back_prj_keys]
     descriptors = [front_img_descripts, left_img_descripts, right_img_descripts, back_img_descripts,
-        front_prj_descripts, left_prj_descripts, right_prj_descripts, back_prj_descripts]
+                   front_prj_descripts, left_prj_descripts, right_prj_descripts, back_prj_descripts]
     matches = [front_matches, left_matches, right_matches, back_matches]
 
     return keypoints, descriptors, matches
@@ -222,7 +224,7 @@ def output_errors(error_angles):
 def main():
     """ Main Script Runner """
     camera_config, point_cloud = read_config_files()
-    map_points(point_cloud, camera_config)
+    map_points(point_cloud, camera_config)    
     keypoints, descriptors, matches = find_and_match()
     error_angles = get_error_angles(keypoints, matches)
     output_errors(error_angles)
