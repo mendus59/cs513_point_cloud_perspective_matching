@@ -69,14 +69,14 @@ def convert_point(point):
     return camera_x, camera_y, camera_z
 
 def write_to_image_file(write_file, a, b, c):
-    xi = int( ((a / c) * 1023.5) + 1024.5)
-    yi = int( ((b / c) * 1023.5) + 1024.5)
+    xi = int(((a / c) * 1023.5) + 1024.5)
+    yi = int(((b / c) * 1023.5) + 1024.5)
     write_file[xi][yi] = 255
 
 def map_points():
     for point in point_cloud:
         camera_x, camera_y, camera_z = convert_point(point)
-        
+
         z_is_positive = (camera_z > 0)
         x_is_positive = (camera_x > 0)
         z_more_than_x_from_camera = (camera_z > abs(camera_x))
@@ -97,16 +97,53 @@ def map_points():
         elif not x_is_positive and x_from_camera_more_than_z_from_camera and x_from_camera_more_than_y_from_camera:
             write_to_image_file(left_projection, camera_y, camera_z, -camera_x)
 
-    cv2.imwrite('front_projection.png', front_projection)
-    cv2.imwrite('back_projection.png', back_projection)
-    cv2.imwrite('left_projection.png', left_projection)
-    cv2.imwrite('right_projection.png', right_projection)
+    cv2.imwrite('output/front_projection.png', front_projection)
+    cv2.imwrite('output/back_projection.png', back_projection)
+    cv2.imwrite('output/left_projection.png', left_projection)
+    cv2.imwrite('output/right_projection.png', right_projection)
 
     return
+
+def find_and_match():
+
+    # Initiate ORB detector
+    orb = cv2.ORB_create()
+
+    front_image_keypoints, front_image_descriptors = orb.detectAndCompute(image_front, None)
+    left_image_keypoints, left_image_descriptors = orb.detectAndCompute(image_left, None)
+    right_image_keypoints, right_image_descriptors = orb.detectAndCompute(image_right, None)
+    back_image_keypoints, back_image_descriptors = orb.detectAndCompute(image_back, None)
+
+    front_projection_keypoints, front_projection_descriptors = orb.detectAndCompute(front_projection, None)
+    left_projection_keypoints, left_projection_descriptors = orb.detectAndCompute(left_projection, None)
+    right_projection_keypoints, right_projection_descriptors = orb.detectAndCompute(right_projection, None)
+    back_projection_keypoints, back_projection_descriptors = orb.detectAndCompute(back_projection, None)
+
+    # Initiate Brute Force matcher
+    bf_matcher = cv2.BFMatcher(cv2.NORM_HAMMING, crossCheck=True)
+
+    front_matches = bf_matcher.match(front_image_descriptors, front_projection_descriptors)
+    left_matches = bf_matcher.match(left_image_descriptors, left_projection_descriptors)
+    right_matches = bf_matcher.match(right_image_descriptors, right_projection_descriptors)
+    back_matches = bf_matcher.match(back_image_descriptors, back_projection_descriptors)
+
+    front_matches = sorted(front_matches, key=lambda val: val.distance)
+    left_matches = sorted(left_matches, key=lambda val: val.distance)
+    right_matches = sorted(right_matches, key=lambda val: val.distance)
+    back_matches = sorted(back_matches, key=lambda val: val.distance)
+
+    keypoints = [front_image_keypoints, left_image_keypoints, right_image_keypoints, back_image_keypoints,
+        front_projection_keypoints, left_projection_keypoints, right_projection_keypoints, back_projection_keypoints]
+    descriptors = [front_image_descriptors, left_image_descriptors, right_image_descriptors, back_image_descriptors,
+        front_projection_descriptors, left_projection_descriptors, right_projection_descriptors, back_projection_descriptors]
+    matches = [front_matches, left_matches, right_matches, back_matches]
+
+    return keypoints, descriptors, matches
 
 def main():
     read_image_files()
     map_points()
+    keypoints, descriptors, matches = find_and_match()
     # Matrix transformation
     # Create images from point cloud
     # Detect and match keypoints
